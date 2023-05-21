@@ -1,0 +1,306 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Store List</title>
+</head>
+<body>
+    <div class="col-md-12 mt-3" id="">
+        <div class="card">
+            <div class="card-body">
+                <div class="w-100">
+                    
+                    <div id="toolbar_tableGrid">
+                        <button type="button" id="addRowBtn" style="border-radius:20px;" class="btn btn-outline-primary mb-3" data-bs-toggle="modal" data-bs-target="#rowInfoModal">
+                            <i class="fas fa-plus-circle"></i> Create Store
+                        </button>
+                    </div>
+
+                    <table id="tableGrid"
+                           class="table table-bordered table-sm"
+                           data-height="400"
+                           data-sortable="true"
+                           data-toggle="table"
+                           data-show-export="true"
+                           data-pagination="true"
+                           data-show-toggle="true"
+                           data-show-fullscreen="true"
+                           data-show-columns="true"
+                           data-toolbar="#toolbar_tableGrid">
+                        <thead>
+                            <tr>
+                                <th data-field="SL." data-formatter="serialNoRow" data-sortable="true">SL.</th>
+                                <th data-field="id" class="d-none">Id</th>
+                                <th data-field="name" data-sortable="true">Store Name</th>
+                                <th data-field="country" data-sortable="true">Country</th>
+                                <th data-field="edit" data-width="15" data-formatter="Edit" data-events="editEvent">Edit</th>
+                                <th data-field="delete" data-width="15" data-formatter="Delete" data-events="deleteEvent">Delete</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    @*................................................MODAL...............................................*@
+
+    <div class="modal fade" id="rowInfoModal" tabindex="-1" aria-labelledby="rowInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rowInfoModalLabel">Create Store</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-1 mx-2">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Store Name</label>
+                            <input type="text" class="form-control" id="name">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="width" class="form-label">Country</label>
+                            <input type="text" class="form-control" id="country">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="button" id="saveBtn" value="Save" onclick="" class="btn btn-outline-primary" />
+                    <input type="button" id="discardBtn" value="Discard" class="btn btn-outline-danger" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var data = [];
+        
+        $(document).ready(function () {
+
+            //highlighting active menu
+            $('.nav-link').filter(function () {
+                return this.text == 'Store';
+            }).closest('.nav-item').addClass('active');
+
+            // Initialize bootstrap table
+            $('#tableGrid').bootstrapTable();
+            getGridData();
+        });
+
+        // Load all data to Grid
+        function getGridData() {
+            $.ajax({
+                url: '/Store/GetAllStores/',
+                type: 'GET',
+                async: true,
+                contentType: 'application/json',
+                success: function (result) {
+                    if (result.length) {
+                        data = [...result];
+                        $('#tableGrid').bootstrapTable('load', data);
+                    }
+                    else{
+                        toastr.warning(`No data found !!!`);
+                    }
+                },
+                error: function (ex) {
+                    toastr.error(`Error: ${ex}`);
+                }
+            });
+        }
+
+        // Serial No in Grid
+        function serialNoRow(value, row, index) 
+        {
+            return [
+                `<div class="right">
+                            ${index + 1}
+                 </div>`
+            ]
+        }
+
+        // Clear function
+        function clearAllFields() {
+            $("#name").val('');
+            $("#country").val('');
+        }
+
+        // Discard button
+        $("#discardBtn").click(function () {
+            $("#rowInfoModal").modal('hide');
+            clearAllFields();
+        });
+
+        //on modal hide clear fields
+        $('#rowInfoModal').on('hide.bs.modal', function (e) {
+            clearAllFields();
+        });
+
+        //add row button to trigger modal to save new row later
+        $('#addRowBtn').click(function () {
+            $('#rowInfoModalLabel').text('Create Store');
+            clearAllFields();
+            $("#saveBtn").attr("value", `Save`);
+            $("#saveBtn").attr("onclick", `addNewRow()`);
+            $('#name').prop('disabled', false);
+        });
+
+        // Edit event
+        window.editEvent =
+        {
+            'click .edit': function (e, value, row, index) {
+                $('#rowInfoModalLabel').text(`Update Store`);
+                clearAllFields();
+                $("#saveBtn").attr("value", `Update`);
+                $("#saveBtn").attr("onclick", `updateRow(${index})`);
+                let getTable = $('#tableGrid').bootstrapTable('getData');
+                $('#name').prop('disabled', true);
+                $("#name").val(getTable[index].name);
+                $("#country").val(getTable[index].country);
+                $('#rowInfoModal').modal('show');
+            }
+        }
+
+        // Edit Button in Grid
+        function Edit(value, row, index) {
+            return [
+                '<div class="right">',
+                '<a class="edit" href="javascript:void(0)" title="Edit">',
+                '<i class="fa fa-edit" style="font-size:20px"></i>',
+                '</a>',
+                '</div>'
+            ].join('')
+        }
+
+        // Delete button in Grid
+        function Delete(value, row, index) {
+            return [
+                '<div class="right">',
+                '<a class="delete" href="javascript:void(0)" title="Delete">',
+                '<i class="fa fa-trash" style="font-size:20px;color:red"></i>',
+                '</a>',
+                '</div>'
+            ].join('')
+        }
+
+        // Create Store
+        function addNewRow() {
+            let obj = {
+                Name: $("#name").val(),
+                Country: $("#country").val()
+            };
+            if (!obj.Name && (obj.Name == null || obj.Name == '')) {
+                toastr.warning('Store Name is required field !!!');
+                return;
+            }
+            if (!obj.Country && (obj.Country == null || obj.Country == '')) {
+                toastr.warning('Country is required field !!!');
+                return;
+            }
+
+            // Duplicate check
+            let getTable = $('#tableGrid').bootstrapTable('getData');
+            let redundantObj = getTable.find(perObj => perObj.name === obj.Name);
+            console.log('redundantObj');
+            console.log(redundantObj);
+            if (redundantObj?.name) {
+                toastr.warning("Same name can't be inserted !!!");
+                return;
+            }
+
+            $.ajax({
+                url: '/Store/CreateStore',
+                type: 'Post',
+                data: { obj: obj },
+                dataType: 'json',
+                async: false,
+                success: function (result) {
+                    toastr.success(result);
+                    setTimeout(function () {
+                        getGridData();
+                        window.location = '@Url.Action("StoreIndex", "Store")';
+                        $('#rowInfoModal').modal('hide');
+                    }, 500);
+                },
+                error: function (ex) {
+                    toastr.error(`Error: ${ex}`);
+                }
+            });
+        }
+
+        // Update Store
+        function updateRow(index) {
+            let obj = {
+                id: (data[index]?.id) ? data[index].id : '',
+                Name: $("#name").val(),
+                Country: $("#country").val()
+            };
+            if (!obj.Name && (obj.Name == null || obj.Name == '')) 
+            {
+                toastr.warning('Store Name is required field !!!');
+                return;
+            }
+            if (!obj.Country && (obj.Country == null || obj.Country == '')) 
+            {
+                toastr.warning('Country is required field !!!');
+                return;
+            }
+            $.ajax({
+                url: '/Store/UpdateStore/',
+                type: 'Post',
+                data: { obj: obj },
+                dataType: 'json',
+                async: true,
+                success: function (result) {
+                    toastr.success(result);
+                    setTimeout(function () {
+                        getGridData();
+                        window.location = '@Url.Action("StoreIndex", "Store")';
+                        $('#rowInfoModal').modal('hide');
+                    }, 500);
+                },
+                error: function (ex) {
+                    toastr.error(`Error: ${ex}`);
+                }
+            });
+        }
+
+        // Delete Store
+        window.deleteEvent =
+        {
+            'click .delete': function (e, value, row, index) {
+                Swal.fire({
+                    title: `Are you sure you want to delete?`,
+                    showDenyButton: true,
+                    icon: 'question',
+                    showCancelButton: false,
+                    confirmButtonText: 'Yes, I am!',
+                    denyButtonText: `No, I'm Not!`,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/Store/DeleteStore',
+                            type: 'Post',
+                            data: { id: data[index].id },
+                            dataType: 'json',
+                            async: false,
+                            success: function (result) {
+                                toastr.success(result);
+                                setTimeout(function () {
+                                    getGridData();
+                                    window.location = '@Url.Action("StoreIndex", "Store")';
+                                }, 500);
+                            },
+                            error: function (ex) {
+                                toastr.error(`Error: ${ex}`);
+                            }
+                        });
+                    }
+                })
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,21 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <h1 class="display-4">Welcome to <b><strong>LMS Inventory</strong></b> </h1>
+    <p></p>
+</div>
+<script>
+    //highlighting active menu
+            $('.nav-link').filter(function () {
+                return this.text == 'Home';
+            }).closest('.nav-item').addClass('active');
+</script>
